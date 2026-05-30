@@ -1,0 +1,12 @@
+# Minimal dependencies for scripts/reproduce_octotools.py --preset paper-two-task-500.
+# Install the package itself separately with: pip install -e . --no-deps
+openai==1.75.0
+pydantic
+python-dotenv==1.0.1
+diskcache==5.6.3
+platformdirs==4.3.6
+tenacity==9.0.0
+pillow==11.1.0
+sympy==1.13.1
+wikipedia==1.4.0
+tqdm
