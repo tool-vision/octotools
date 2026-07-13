@@ -99,6 +99,18 @@ def main():
     parser.add_argument("--num-workers", type=int, default=32)
     args = parser.parse_args()
 
+    # Fail fast if the LLM endpoint is down: a broken pool initializer would
+    # otherwise respawn workers forever.
+    base_url = os.environ.get("VLLM_BASE_URL", "http://localhost:8888/v1")
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(base_url.rstrip("/") + "/models", timeout=10) as r:
+            r.read()
+    except Exception as exc:
+        print(f"FATAL: LLM endpoint {base_url} unreachable: {exc}", flush=True)
+        sys.exit(2)
+
     instances = []
     with open(args.manifest) as f:
         for line in f:
