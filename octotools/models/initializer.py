@@ -21,8 +21,9 @@ class Initializer:
         print(f"LLM engine name: {self.model_string}")
         self._set_up_tools()
 
-        # if vllm, set up the vllm server
-        if model_string.startswith("vllm-"):
+        # if vllm, set up the vllm server (skipped when VLLM_BASE_URL points
+        # at an externally managed OpenAI-compatible server)
+        if model_string.startswith("vllm-") and not os.environ.get("VLLM_BASE_URL"):
             self.setup_vllm_server()
 
     def get_project_root(self):

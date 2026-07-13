@@ -1,10 +1,8 @@
 # Reference: https://github.com/zou-group/textgrad/blob/main/textgrad/engine/openai.py
 
-try:
-    import vllm
-except ImportError:
-    raise ImportError("If you'd like to use VLLM models, please install the vllm package by running `pip install vllm`.")
-
+# The vllm package is only needed when octotools launches its own server
+# (Initializer.setup_vllm_server). Talking to an external OpenAI-compatible
+# server via VLLM_BASE_URL requires only the openai client.
 try:
     from openai import OpenAI
 except ImportError:
@@ -46,16 +44,19 @@ class ChatVLLM(EngineLM, CachedEngine):
             os.makedirs(self.image_cache_dir, exist_ok=True)
             super().__init__(cache_path=cache_path)
         
+        base_url = os.environ.get("VLLM_BASE_URL", "http://localhost:8888/v1")
+        api_key = os.environ.get("VLLM_API_KEY", "dummy-token")
         try:
             self.client = OpenAI(
-                base_url="http://localhost:8888/v1",
-                api_key="dummy-token",
+                base_url=base_url,
+                api_key=api_key,
             )
         except Exception as e:
-            raise ValueError(f"Failed to connect to VLLM server. Please ensure the server is running and try again. Please ensure that the model is running at localhost:8888.")
+            raise ValueError(f"Failed to connect to VLLM server. Please ensure the server is running and try again. Please ensure that the model is running at {base_url}.")
 
-        if self.client.models.list().data[0].id != self.model_string:
-            raise ValueError(f"The VLLM server is running, but the model {self.model_string} is not available. Please check the model name and try again.")
+        served_models = [m.id for m in self.client.models.list().data]
+        if self.model_string not in served_models:
+            raise ValueError(f"The VLLM server at {base_url} is running, but the model {self.model_string} is not available (served: {served_models}). Please check the model name and try again.")
 
 
     def generate(self, content: Union[str, List[Union[str, bytes]]], system_prompt=None, **kwargs):
